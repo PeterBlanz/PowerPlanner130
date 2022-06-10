@@ -138,7 +138,8 @@ class PowerPlanner130View extends WatchUi.DataField
         else if(avgPower > tgtPower + _tolerance) { powerIndicator = "+"; }
         else { powerIndicator = "±"; }
         
-        value.setText(powerIndicator + " " + avgPower.format("%.0f") + "/" + tgtPower.format("%.0f") + " " + _segmentDistanceRemaining.format("%.2f"));
+        // build text
+        value.setText(avgPower.format("%.0f") + "/" + tgtPower.format("%.0f") + " " + powerIndicator + " " +  _segmentDistanceRemaining.format("%.2f"));
 
         // call parent's onUpdate(dc) to redraw the layout
         View.onUpdate(dc);
