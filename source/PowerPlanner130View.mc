@@ -62,7 +62,7 @@ class PowerPlanner130View extends WatchUi.DataField
         indView.setText("|");
         
         var midView = View.findDrawableById("midpoint");
-        midView.locY = indView.locY + 7;
+        midView.locY = indView.locY + 6;
         (midView as Text).setColor(Graphics.COLOR_BLACK);
         midView.setText("*");
         
@@ -94,7 +94,7 @@ class PowerPlanner130View extends WatchUi.DataField
         }
         
         // update values
-        _segmentPowerSum += _currentPower;
+        _segmentPowerSum += (info.currentPower as Float);
         _segmentSamples += 1;
         _segmentDistanceRemaining = _segmentData[2 * _currentSegment] - elapsedKm;
     }
@@ -107,20 +107,15 @@ class PowerPlanner130View extends WatchUi.DataField
           
         // set indicator
         var tgtPower = _segmentData[2 * _currentSegment + 1];
-        var graphicsRange = _width - 20;
-        var powerMin = tgtPower - 0.5f * _powerRange;
-        var powerLoc = (_currentPower - powerMin) / _powerRange;
+        var powerLoc = (_currentPower - tgtPower + 0.5f * _powerRange) / _powerRange;
         if(powerLoc < 0.0f) { powerLoc = 0.0f; }
         else if(powerLoc > 1.0f) { powerLoc = 1.0f; } 
-        var indLoc = 10 + powerLoc * graphicsRange;
-        var indic = View.findDrawableById("indicator") as Text;
-        
-        indic.locX = indLoc;
+        View.findDrawableById("indicator").locX = 10 + powerLoc * (_width - 20);
         
         // set value
         var avgPower =  _segmentSamples > 0 ? _segmentPowerSum / _segmentSamples : 0.0f;
         var value = View.findDrawableById("value") as Text;
-        value.setText(avgPower.format("%.0f") + "/" + tgtPower.format("%.0f") + " " +  _segmentDistanceRemaining.format("%.2f"));
+        value.setText(avgPower.format("%.0f") + "/" + tgtPower.format("%.0f") + "  " +  _segmentDistanceRemaining.format("%.2f"));
 
         // call parent's onUpdate(dc) to redraw the layout
         View.onUpdate(dc);
