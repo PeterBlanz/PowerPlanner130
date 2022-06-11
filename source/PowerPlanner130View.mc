@@ -6,10 +6,11 @@ using Toybox.Application.Storage;
 
 class PowerPlanner130View extends WatchUi.DataField
 {
+	hidden var _width as float;
 	hidden var _currentSegment as Number;
     hidden var _currentPower as Float;
     hidden var _segmentPowerSum as Float;
-    hidden var _tolerance as Float;
+    hidden var _powerRange as Float;
     hidden var _segmentDistanceRemaining as Float;
     hidden var _segmentSamples as Number;
     hidden var _segmentData as Array;
@@ -32,11 +33,11 @@ class PowerPlanner130View extends WatchUi.DataField
         // basic init
         DataField.initialize();
         _currentSegment = 0;
-        _currentPower = 0.0f;
+        _currentPower = -1000.0f;
         _segmentPowerSum = 0.0f;
         _segmentSamples = 0;
         _segmentDistanceRemaining = _segmentData[2 * _currentSegment];
-        _tolerance = 2.5f;
+        _powerRange = 80.0f;
     }
     
     function parsePlan(planPart as Text, j as number) as Void
@@ -54,12 +55,22 @@ class PowerPlanner130View extends WatchUi.DataField
     function onLayout(dc as Dc) as Void
     {
         View.setLayout(Rez.Layouts.MainLayout(dc));
+        
         var indView = View.findDrawableById("indicator");
         indView.locY = indView.locY - 16;
         (indView as Text).setColor(Graphics.COLOR_BLACK);
+        indView.setText("|");
+        
+        var midView = View.findDrawableById("midpoint");
+        midView.locY = indView.locY + 7;
+        (midView as Text).setColor(Graphics.COLOR_BLACK);
+        midView.setText("*");
+        
         var valueView = View.findDrawableById("value");
-        valueView.locY = valueView.locY + 7;
+        valueView.locY = valueView.locY + 10;
         (valueView as Text).setColor(Graphics.COLOR_BLACK);
+        
+        _width = dc.getWidth();
     }
 
     // The given info object contains all the current workout information. Calculate a value and save it locally in this method.
@@ -68,7 +79,8 @@ class PowerPlanner130View extends WatchUi.DataField
     {
     	// sanity checks
         if(!(info has :currentPower)) { return; }
-        _currentPower = info.currentPower != null ? info.currentPower as Float : 0.0f;
+        var alpha = _currentPower > 0 ? 0.9f : 0.0f;
+        _currentPower = info.currentPower != null ? (1.0f - alpha) * (info.currentPower as Float) + alpha * _currentPower : 0.0f;
         if(!(info has :elapsedDistance)) { return; }
         var elapsedKm = info.elapsedDistance != null ? info.elapsedDistance * 0.001f : 0.0f;
         if(elapsedKm == 0) { return; }
@@ -94,20 +106,19 @@ class PowerPlanner130View extends WatchUi.DataField
         (View.findDrawableById("Background") as Text).setColor(Graphics.COLOR_WHITE);
           
         // set indicator
-        var avgPower =  _segmentSamples > 0 ? _segmentPowerSum / _segmentSamples : 0.0f;
         var tgtPower = _segmentData[2 * _currentSegment + 1];
-        var powerIndicator as Text;
-        if(avgPower < tgtPower - 3 * _tolerance) { powerIndicator = "---"; }
-        else if(avgPower < tgtPower - 2 * _tolerance) { powerIndicator = "--"; }
-        else if(avgPower < tgtPower - _tolerance) { powerIndicator = "-"; }
-        else if(avgPower > tgtPower + 3 * _tolerance) { powerIndicator = "+++"; }
-        else if(avgPower > tgtPower + 2 * _tolerance) { powerIndicator = "++"; }
-        else if(avgPower > tgtPower + _tolerance) { powerIndicator = "+"; }
-        else { powerIndicator = "±"; }
+        var graphicsRange = _width - 20;
+        var powerMin = tgtPower - 0.5f * _powerRange;
+        var powerLoc = (_currentPower - powerMin) / _powerRange;
+        if(powerLoc < 0.0f) { powerLoc = 0.0f; }
+        else if(powerLoc > 1.0f) { powerLoc = 1.0f; } 
+        var indLoc = 10 + powerLoc * graphicsRange;
         var indic = View.findDrawableById("indicator") as Text;
-        indic.setText(powerIndicator);
+        
+        indic.locX = indLoc;
         
         // set value
+        var avgPower =  _segmentSamples > 0 ? _segmentPowerSum / _segmentSamples : 0.0f;
         var value = View.findDrawableById("value") as Text;
         value.setText(avgPower.format("%.0f") + "/" + tgtPower.format("%.0f") + " " +  _segmentDistanceRemaining.format("%.2f"));
 
