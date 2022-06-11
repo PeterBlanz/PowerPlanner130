@@ -50,40 +50,16 @@ class PowerPlanner130View extends WatchUi.DataField
 		}
     }
 
-    // Set your layout here. Anytime the size of obscurity of
+    // Set your layout here.
     function onLayout(dc as Dc) as Void
     {
-        var obscurityFlags = DataField.getObscurityFlags();
-
-        // quadrant layouts
-        if (obscurityFlags == (OBSCURE_TOP | OBSCURE_LEFT))
-        {
-            View.setLayout(Rez.Layouts.TopLeftLayout(dc));
-        }
-        else if (obscurityFlags == (OBSCURE_TOP | OBSCURE_RIGHT))
-        {
-            View.setLayout(Rez.Layouts.TopRightLayout(dc));
-        }
-        else if (obscurityFlags == (OBSCURE_BOTTOM | OBSCURE_LEFT))
-        {
-            View.setLayout(Rez.Layouts.BottomLeftLayout(dc));
-        }
-        else if (obscurityFlags == (OBSCURE_BOTTOM | OBSCURE_RIGHT))
-        {
-            View.setLayout(Rez.Layouts.BottomRightLayout(dc));
-        }
-
-        // generic, centered layout
-        else
-        {
-            View.setLayout(Rez.Layouts.MainLayout(dc));
-            var labelView = View.findDrawableById("label");
-            labelView.locY = labelView.locY - 16;
-            var valueView = View.findDrawableById("value");
-            valueView.locY = valueView.locY + 7;
-        }
-
-        (View.findDrawableById("label") as Text).setText("Power pacer");
+        View.setLayout(Rez.Layouts.MainLayout(dc));
+        var indView = View.findDrawableById("indicator");
+        indView.locY = indView.locY - 16;
+        (indView as Text).setColor(Graphics.COLOR_BLACK);
+        var valueView = View.findDrawableById("value");
+        valueView.locY = valueView.locY + 7;
+        (valueView as Text).setColor(Graphics.COLOR_BLACK);
     }
 
     // The given info object contains all the current workout information. Calculate a value and save it locally in this method.
@@ -114,20 +90,9 @@ class PowerPlanner130View extends WatchUi.DataField
     // Display the value you computed here. This will be called once a second when the data field is visible.
     function onUpdate(dc as Dc) as Void
     {
-        // set the background color
-        (View.findDrawableById("Background") as Text).setColor(getBackgroundColor());
-
-        // set the foreground color and value
-        var value = View.findDrawableById("value") as Text;
-        if (getBackgroundColor() == Graphics.COLOR_BLACK)
-        {
-            value.setColor(Graphics.COLOR_WHITE);
-        }
-        else
-        {
-            value.setColor(Graphics.COLOR_BLACK);
-        }
-        
+    	// set the background color
+        (View.findDrawableById("Background") as Text).setColor(Graphics.COLOR_WHITE);
+          
         // set indicator
         var avgPower =  _segmentSamples > 0 ? _segmentPowerSum / _segmentSamples : 0.0f;
         var tgtPower = _segmentData[2 * _currentSegment + 1];
@@ -139,9 +104,12 @@ class PowerPlanner130View extends WatchUi.DataField
         else if(avgPower > tgtPower + 2 * _tolerance) { powerIndicator = "++"; }
         else if(avgPower > tgtPower + _tolerance) { powerIndicator = "+"; }
         else { powerIndicator = "±"; }
+        var indic = View.findDrawableById("indicator") as Text;
+        indic.setText(powerIndicator);
         
-        // build text
-        value.setText(avgPower.format("%.0f") + "/" + tgtPower.format("%.0f") + " " + powerIndicator + " " +  _segmentDistanceRemaining.format("%.2f"));
+        // set value
+        var value = View.findDrawableById("value") as Text;
+        value.setText(avgPower.format("%.0f") + "/" + tgtPower.format("%.0f") + " " +  _segmentDistanceRemaining.format("%.2f"));
 
         // call parent's onUpdate(dc) to redraw the layout
         View.onUpdate(dc);
