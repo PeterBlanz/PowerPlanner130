@@ -8,7 +8,7 @@ class PowerPlanner130View extends WatchUi.DataField
 {
 	hidden var _width as float;
 	hidden var _currentSegment as Number;
-    hidden var _currentPower as Float;
+    hidden var _filteredPower as Float;
     hidden var _segmentPowerSum as Float;
     hidden var _powerRange as Float;
     hidden var _segmentDistanceRemaining as Float;
@@ -34,7 +34,7 @@ class PowerPlanner130View extends WatchUi.DataField
         // basic init
         DataField.initialize();
         _currentSegment = 0;
-        _currentPower = -1000.0f;
+        _filteredPower = -1000.0f;
         _segmentPowerSum = 0.0f;
         _segmentSamples = 0;
         _segmentDistanceRemaining = _segmentData[2 * _currentSegment];
@@ -90,8 +90,9 @@ class PowerPlanner130View extends WatchUi.DataField
     {
     	// sanity checks
         if(!(info has :currentPower)) { return; }
-        var alpha = _currentPower > 0 ? 0.9f : 0.0f;
-        _currentPower = info.currentPower != null ? (1.0f - alpha) * (info.currentPower as Float) + alpha * _currentPower : 0.0f;
+        var alpha = _filteredPower > 0 ? 0.9f : 0.0f;
+        var currentPower as Float = info.currentPower != null ? info.currentPower as Float : 0.0f;
+        _filteredPower = (1.0f - alpha) * currentPower + alpha * _filteredPower;
         if(!(info has :elapsedDistance)) { return; }
         var elapsedKm = info.elapsedDistance != null ? info.elapsedDistance * 0.001f : 0.0f;
         if(elapsedKm == 0) { return; }
@@ -99,13 +100,13 @@ class PowerPlanner130View extends WatchUi.DataField
         // check segment, update values
         if(elapsedKm > _segmentData[2 * _currentSegment])
         {
-        	_segmentPowerSum = (info.currentPower as Float);
+        	_segmentPowerSum = currentPower;
         	_segmentSamples = 1;
         	if(_currentSegment < _segmentData.size() / 2 - 1) { _currentSegment += 1; }
         }
         else
         {
-	        _segmentPowerSum += (info.currentPower as Float);
+	        _segmentPowerSum += currentPower;
 	        _segmentSamples += 1;
         }
         _segmentDistanceRemaining = _segmentData[2 * _currentSegment] - elapsedKm;
@@ -119,7 +120,7 @@ class PowerPlanner130View extends WatchUi.DataField
           
         // set indicator
         var tgtPower = _segmentData[2 * _currentSegment + 1];
-        var powerLoc = (_currentPower - tgtPower + 0.5f * _powerRange) / _powerRange;
+        var powerLoc = (_filteredPower - tgtPower + 0.5f * _powerRange) / _powerRange;
         if(powerLoc < 0.0f) { powerLoc = 0.0f; }
         else if(powerLoc > 1.0f) { powerLoc = 1.0f; } 
         View.findDrawableById("indicator").locX = 10 + powerLoc * (_width - 20);
