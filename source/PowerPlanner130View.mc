@@ -6,8 +6,8 @@ using Toybox.Application.Storage;
 
 class PowerPlanner130View extends WatchUi.DataField
 {
-	hidden var _width as float;
-	hidden var _currentSegment as Number;
+	hidden var _width as Float;
+	hidden var _distanceIndex as Number;
     hidden var _filteredPower as Float;
     hidden var _segmentPowerSum as Float;
     hidden var _powerRange as Float;
@@ -33,11 +33,11 @@ class PowerPlanner130View extends WatchUi.DataField
         
         // basic init
         DataField.initialize();
-        _currentSegment = 0;
+        _distanceIndex = 0;
         _filteredPower = -1000.0f;
         _segmentPowerSum = 0.0f;
         _segmentSamples = 0;
-        _segmentDistanceRemaining = _segmentData[2 * _currentSegment];
+        _segmentDistanceRemaining = _segmentData[0];
         _powerRange = 80.0f;
     }
     
@@ -88,28 +88,35 @@ class PowerPlanner130View extends WatchUi.DataField
     // Note that compute() and onUpdate() are asynchronous, and there is no guarantee that compute() will be called before onUpdate().
     function compute(info as Activity.Info) as Void
     {
-    	// sanity checks
+    	// calculate filtered power
         if(!(info has :currentPower)) { return; }
         var alpha = _filteredPower > 0 ? 0.9f : 0.0f;
         var currentPower as Float = info.currentPower != null ? info.currentPower as Float : 0.0f;
         _filteredPower = (1.0f - alpha) * currentPower + alpha * _filteredPower;
+        
+        // calculate remaining distance
         if(!(info has :elapsedDistance)) { return; }
         var elapsedKm = info.elapsedDistance != null ? info.elapsedDistance * 0.001f : 0.0f;
-        if(elapsedKm == 0) { return; }
+        var newRemaining as Float = _segmentData[_distanceIndex] - elapsedKm;
+        if(newRemaining == _segmentDistanceRemaining) { return; }
         
         // check segment, update values
-        if(elapsedKm > _segmentData[2 * _currentSegment])
+        if(newRemaining < 0)
         {
         	_segmentPowerSum = currentPower;
         	_segmentSamples = 1;
-        	if(_currentSegment < _segmentData.size() / 2 - 1) { _currentSegment += 1; }
+        	if(_distanceIndex < _segmentData.size() - 2)
+        	{
+        		_distanceIndex += 2;
+        		newRemaining = _segmentData[_distanceIndex] - elapsedKm;
+        	}
         }
         else
         {
 	        _segmentPowerSum += currentPower;
 	        _segmentSamples += 1;
         }
-        _segmentDistanceRemaining = _segmentData[2 * _currentSegment] - elapsedKm;
+        _segmentDistanceRemaining = newRemaining;
     }
 
     // Display the value you computed here. This will be called once a second when the data field is visible.
@@ -119,7 +126,7 @@ class PowerPlanner130View extends WatchUi.DataField
         (View.findDrawableById("Background") as Text).setColor(Graphics.COLOR_WHITE);
           
         // set indicator
-        var tgtPower = _segmentData[2 * _currentSegment + 1];
+        var tgtPower = _segmentData[_distanceIndex + 1];
         var powerLoc = (_filteredPower - tgtPower + 0.5f * _powerRange) / _powerRange;
         if(powerLoc < 0.0f) { powerLoc = 0.0f; }
         else if(powerLoc > 1.0f) { powerLoc = 1.0f; } 
