@@ -2,6 +2,10 @@
     <properties>
     	<property id="filtering" type="float">0.85f</property>
     	<property id="planPart01" type="string">1,200;2,210;3,220;1000,220</property>
+    	<property id="planPart02" type="string"></property>
+    	<property id="planPart03" type="string"></property>
+    	<property id="planPart04" type="string"></property>
+    	<property id="planPart05" type="string"></property>
     </properties>
  
     <settings>
@@ -9,6 +13,18 @@
             <settingConfig type="numeric" min="0.01" max="0.99" />
 		</setting>
 		<setting propertyKey="@Properties.planPart01" title="Power plan, part 1">
+            <settingConfig type="alphaNumeric" maxLength="1000" />
+		</setting>
+		<setting propertyKey="@Properties.planPart02" title="Power plan, part 2">
+            <settingConfig type="alphaNumeric" maxLength="1000" />
+		</setting>
+		<setting propertyKey="@Properties.planPart03" title="Power plan, part 3">
+            <settingConfig type="alphaNumeric" maxLength="1000" />
+		</setting>
+		<setting propertyKey="@Properties.planPart04" title="Power plan, part 4">
+            <settingConfig type="alphaNumeric" maxLength="1000" />
+		</setting>
+		<setting propertyKey="@Properties.planPart05" title="Power plan, part 5">
             <settingConfig type="alphaNumeric" maxLength="1000" />
 		</setting>
     </settings>

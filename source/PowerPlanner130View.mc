@@ -24,6 +24,10 @@ class PowerPlanner130View extends WatchUi.DataField
 		_segmentData = new[1000];
 		var segInd = 0;
 		segInd = parsePlan(Application.getApp().getProperty("planPart01"), segInd);
+		segInd = parsePlan(Application.getApp().getProperty("planPart02"), segInd);
+		segInd = parsePlan(Application.getApp().getProperty("planPart03"), segInd);
+		segInd = parsePlan(Application.getApp().getProperty("planPart04"), segInd);
+		segInd = parsePlan(Application.getApp().getProperty("planPart05"), segInd);
         
         // initialize variables
         _alpha = Application.getApp().getProperty("filtering");
