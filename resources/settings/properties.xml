@@ -1,11 +1,15 @@
 <resources>
     <properties>
     	<property id="filtering" type="float">0.85f</property>
+    	<property id="planPart01" type="string">1,200;2,210;3,220;1000,220</property>
     </properties>
  
     <settings>
         <setting propertyKey="@Properties.filtering" title="Power filtering">
             <settingConfig type="numeric" min="0.01" max="0.99" />
+		</setting>
+		<setting propertyKey="@Properties.planPart01" title="Power plan, part 1">
+            <settingConfig type="alphaNumeric" maxLength="1000" />
 		</setting>
     </settings>
 </resources>
