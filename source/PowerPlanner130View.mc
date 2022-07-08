@@ -101,8 +101,8 @@ class PowerPlanner130View extends WatchUi.DataField
         if(newRemaining < 0)
         {
         	_segmentPowerSum = currentPower;
-        	_segmentSamples = 1;
-        	if(_distanceIndex < _segmentData.size() - 2)
+	        _segmentSamples = 1;
+        	while(newRemaining < 0 && _distanceIndex < _segmentData.size() - 2)
         	{
         		_distanceIndex += 2;
         		newRemaining = _segmentData[_distanceIndex] - elapsedKm;
