@@ -124,7 +124,7 @@ class PowerPlanner130View extends WatchUi.DataField
           
         // set indicator
         var tgtPower = _segmentData[_distanceIndex + 1];
-        var powerLoc = (_filteredPower - tgtPower) / 100 + 0.5f;
+        var powerLoc = (_filteredPower - tgtPower) / 150 + 0.5f;
         if(powerLoc < 0.0f) { powerLoc = 0.0f; }
         else if(powerLoc > 1.0f) { powerLoc = 1.0f; } 
         View.findDrawableById("indicator").locX = 10 + powerLoc * (_width - 20);
