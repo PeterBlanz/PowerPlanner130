@@ -1,6 +1,7 @@
 <resources>
     <properties>
-    	<property id="filtering" type="float">0.85f</property>
+    	<property id="powerBias" type="float">0.0f</property>
+    	<property id="speedBias" type="float">0.0f</property>
     	<property id="planPart01" type="string">1,100,10;2,210,31;3,220,32;1000,220,32</property>
     	<property id="planPart02" type="string"></property>
     	<property id="planPart03" type="string"></property>
@@ -9,22 +10,25 @@
     </properties>
  
     <settings>
-        <setting propertyKey="@Properties.filtering" title="Power filtering">
-            <settingConfig type="numeric" min="0.01" max="0.99" />
+        <setting propertyKey="@Properties.powerBias" title="Power bias">
+            <settingConfig type="numeric" min="-100" max="100" />
 		</setting>
-		<setting propertyKey="@Properties.planPart01" title="Power plan, part 1">
+		<setting propertyKey="@Properties.speedBias" title="Speed bias">
+            <settingConfig type="numeric" min="-20" max="20" />
+		</setting>
+		<setting propertyKey="@Properties.planPart01" title="Race plan, part 1">
             <settingConfig type="alphaNumeric" maxLength="1000" />
 		</setting>
-		<setting propertyKey="@Properties.planPart02" title="Power plan, part 2">
+		<setting propertyKey="@Properties.planPart02" title="Race plan, part 2">
             <settingConfig type="alphaNumeric" maxLength="1000" />
 		</setting>
-		<setting propertyKey="@Properties.planPart03" title="Power plan, part 3">
+		<setting propertyKey="@Properties.planPart03" title="Race plan, part 3">
             <settingConfig type="alphaNumeric" maxLength="1000" />
 		</setting>
-		<setting propertyKey="@Properties.planPart04" title="Power plan, part 4">
+		<setting propertyKey="@Properties.planPart04" title="Race plan, part 4">
             <settingConfig type="alphaNumeric" maxLength="1000" />
 		</setting>
-		<setting propertyKey="@Properties.planPart05" title="Power plan, part 5">
+		<setting propertyKey="@Properties.planPart05" title="Race plan, part 5">
             <settingConfig type="alphaNumeric" maxLength="1000" />
 		</setting>
     </settings>

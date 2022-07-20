@@ -7,7 +7,8 @@ using Toybox.Application.Storage;
 class PowerPlanner130View extends WatchUi.DataField
 {
 	hidden var _width as Float;
-	hidden var _alpha as Float;
+	hidden var _powerBias as Float;
+	hidden var _speedBias as Float;
 	hidden var _distanceIndex as Number;
     hidden var _segmentPowerSum as Float;
     hidden var _segmentSpeedSum as Float;
@@ -30,7 +31,8 @@ class PowerPlanner130View extends WatchUi.DataField
 		segInd = parsePlan(Application.getApp().getProperty("planPart05"), segInd);
         
         // initialize variables
-        _alpha = Application.getApp().getProperty("filtering");
+        _powerBias = Application.getApp().getProperty("powerBias");
+        _speedBias = Application.getApp().getProperty("speedBias");
         _distanceIndex = 0;
         _segmentPowerSum = 0.0f;
         _segmentSpeedSum = 0.0f;
@@ -143,14 +145,14 @@ class PowerPlanner130View extends WatchUi.DataField
         var avgSpeed =  _segmentSamples > 0 ? _segmentSpeedSum / _segmentSamples : 0.0f;
           
         // set power indicator
-        var tgtPower = _segmentData[_distanceIndex + 1];
+        var tgtPower = _segmentData[_distanceIndex + 1] + _powerBias;
         var powerLoc = (avgPower - tgtPower) / 80 + 0.5f;
         if(powerLoc < 0.0f) { powerLoc = 0.0f; }
         else if(powerLoc > 1.0f) { powerLoc = 1.0f; } 
         View.findDrawableById("powerIndicator").locX = 17 + powerLoc * (_width - 34);
         
         // set speed indicator
-        var tgtSpeed = _segmentData[_distanceIndex + 2];
+        var tgtSpeed = _segmentData[_distanceIndex + 2] + _speedBias;
         var speedLoc = (avgSpeed - tgtSpeed) / 8 + 0.5f;
         if(speedLoc < 0.0f) { speedLoc = 0.0f; }
         else if(speedLoc > 1.0f) { speedLoc = 1.0f; } 
