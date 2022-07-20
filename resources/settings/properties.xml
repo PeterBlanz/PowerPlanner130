@@ -1,7 +1,7 @@
 <resources>
     <properties>
     	<property id="filtering" type="float">0.85f</property>
-    	<property id="planPart01" type="string">1,200;2,210;3,220;1000,220</property>
+    	<property id="planPart01" type="string">1,100,10;2,210,31;3,220,32;1000,220,32</property>
     	<property id="planPart02" type="string"></property>
     	<property id="planPart03" type="string"></property>
     	<property id="planPart04" type="string"></property>

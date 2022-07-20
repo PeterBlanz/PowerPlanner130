@@ -9,8 +9,8 @@ class PowerPlanner130View extends WatchUi.DataField
 	hidden var _width as Float;
 	hidden var _alpha as Float;
 	hidden var _distanceIndex as Number;
-    hidden var _filteredPower as Float;
     hidden var _segmentPowerSum as Float;
+    hidden var _segmentSpeedSum as Float;
     hidden var _segmentDistanceRemaining as Float;
     hidden var _segmentSamples as Number;
     hidden var _segmentData as Array;
@@ -21,7 +21,7 @@ class PowerPlanner130View extends WatchUi.DataField
         DataField.initialize();
 		
 		// parse power plan
-		_segmentData = new[1000];
+		_segmentData = new[1500];
 		var segInd = 0;
 		segInd = parsePlan(Application.getApp().getProperty("planPart01"), segInd);
 		segInd = parsePlan(Application.getApp().getProperty("planPart02"), segInd);
@@ -32,8 +32,8 @@ class PowerPlanner130View extends WatchUi.DataField
         // initialize variables
         _alpha = Application.getApp().getProperty("filtering");
         _distanceIndex = 0;
-        _filteredPower = -1000.0f;
         _segmentPowerSum = 0.0f;
+        _segmentSpeedSum = 0.0f;
         _segmentSamples = 0;
         _segmentDistanceRemaining = _segmentData[0];
     }
@@ -63,36 +63,50 @@ class PowerPlanner130View extends WatchUi.DataField
     function onLayout(dc as Dc) as Void
     {
         View.setLayout(Rez.Layouts.MainLayout(dc));
-        
-        var indView = View.findDrawableById("indicator");
-        indView.locY = indView.locY - 16;
-        (indView as Text).setColor(Graphics.COLOR_BLACK);
-        indView.setText("|");
-        
-        var midView = View.findDrawableById("midpoint");
-        midView.locY = indView.locY + 1;
-        (midView as Text).setColor(Graphics.COLOR_BLACK);
-        midView.setText(">> <<");
+        _width = dc.getWidth() * 0.75f;
         
         var valueView = View.findDrawableById("value");
-        valueView.locY = valueView.locY + 13;
-        (valueView as Text).setColor(Graphics.COLOR_BLACK);
         
-        _width = dc.getWidth();
+        // set up power display
+        var pwrIndView = View.findDrawableById("powerIndicator");
+        pwrIndView.locY = valueView.locY - 15;
+        pwrIndView.setText("|");
+        var pwrMidView = View.findDrawableById("powerMidpoint");
+        pwrMidView.locY = pwrIndView.locY + 1;
+        pwrMidView.locX = _width / 2;
+        pwrMidView.setText(">> <<");
+        var pwrLblView = View.findDrawableById("powerLabel");
+        pwrLblView.locY = pwrMidView.locY;
+        pwrLblView.setText("P");
+        
+        // set up speed display
+        var spdIndView = View.findDrawableById("speedIndicator");
+        spdIndView.locY = valueView.locY + 15;
+        spdIndView.setText("|");
+        var spdMidView = View.findDrawableById("speedMidpoint");
+        spdMidView.locY = spdIndView.locY + 1;
+        spdMidView.locX = pwrMidView.locX;
+        spdMidView.setText(">> <<");
+        var spdLblView = View.findDrawableById("speedLabel");
+        spdLblView.locY = spdMidView.locY;
+        spdLblView.setText("S");
     }
 
     // The given info object contains all the current workout information. Calculate a value and save it locally in this method.
     // Note that compute() and onUpdate() are asynchronous, and there is no guarantee that compute() will be called before onUpdate().
     function compute(info as Activity.Info) as Void
     {
-    	// calculate filtered power
-        if(!(info has :currentPower)) { return; }
-        var alpha = _filteredPower > 0 ? _alpha : 0.0f;
+    	// check info
+    	if(!(info has :currentPower)) { return; }
+        if(!(info has :currentSpeed)) { return; }
+        if(!(info has :elapsedDistance)) { return; }
+        
+    	// get current power and speed
         var currentPower as Float = info.currentPower != null ? info.currentPower as Float : 0.0f;
-        _filteredPower = (1.0f - alpha) * currentPower + alpha * _filteredPower;
+        var currentSpeed as Float = info.currentSpeed != null ? info.currentSpeed as Float : 0.0f;
+        currentSpeed *= 3.6f;
         
         // calculate remaining distance
-        if(!(info has :elapsedDistance)) { return; }
         var elapsedKm = info.elapsedDistance != null ? info.elapsedDistance * 0.001f : 0.0f;
         var newRemaining as Float = _segmentData[_distanceIndex] - elapsedKm;
         if(newRemaining == _segmentDistanceRemaining) { return; }
@@ -101,16 +115,18 @@ class PowerPlanner130View extends WatchUi.DataField
         if(newRemaining < 0)
         {
         	_segmentPowerSum = currentPower;
+        	_segmentSpeedSum = currentSpeed;
 	        _segmentSamples = 1;
-        	while(newRemaining < 0 && _distanceIndex < _segmentData.size() - 2)
+        	while(newRemaining < 0 && _distanceIndex < _segmentData.size() - 3)
         	{
-        		_distanceIndex += 2;
+        		_distanceIndex += 3;
         		newRemaining = _segmentData[_distanceIndex] - elapsedKm;
         	}
         }
         else
         {
 	        _segmentPowerSum += currentPower;
+	        _segmentSpeedSum += currentSpeed;
 	        _segmentSamples += 1;
         }
         _segmentDistanceRemaining = newRemaining;
@@ -121,18 +137,28 @@ class PowerPlanner130View extends WatchUi.DataField
     {
     	// set the background color
         (View.findDrawableById("Background") as Text).setColor(Graphics.COLOR_WHITE);
+        
+        // calculate averages
+        var avgPower =  _segmentSamples > 0 ? _segmentPowerSum / _segmentSamples : 0.0f;
+        var avgSpeed =  _segmentSamples > 0 ? _segmentSpeedSum / _segmentSamples : 0.0f;
           
-        // set indicator
+        // set power indicator
         var tgtPower = _segmentData[_distanceIndex + 1];
-        var powerLoc = (_filteredPower - tgtPower) / 150 + 0.5f;
+        var powerLoc = (avgPower - tgtPower) / 80 + 0.5f;
         if(powerLoc < 0.0f) { powerLoc = 0.0f; }
         else if(powerLoc > 1.0f) { powerLoc = 1.0f; } 
-        View.findDrawableById("indicator").locX = 10 + powerLoc * (_width - 20);
+        View.findDrawableById("powerIndicator").locX = 17 + powerLoc * (_width - 34);
+        
+        // set speed indicator
+        var tgtSpeed = _segmentData[_distanceIndex + 2];
+        var speedLoc = (avgSpeed - tgtSpeed) / 8 + 0.5f;
+        if(speedLoc < 0.0f) { speedLoc = 0.0f; }
+        else if(speedLoc > 1.0f) { speedLoc = 1.0f; } 
+        View.findDrawableById("speedIndicator").locX = 17 + speedLoc * (_width - 34);
         
         // set value
-        var avgPower =  _segmentSamples > 0 ? _segmentPowerSum / _segmentSamples : 0.0f;
         var value = View.findDrawableById("value") as Text;
-        value.setText(avgPower.format("%.0f") + "/" + tgtPower.format("%.0f") + "  " +  _segmentDistanceRemaining.format("%.2f"));
+        value.setText(_segmentDistanceRemaining.format("%.2f"));
 
         // call parent's onUpdate(dc) to redraw the layout
         View.onUpdate(dc);
