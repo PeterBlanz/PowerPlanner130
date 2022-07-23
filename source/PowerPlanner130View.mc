@@ -10,8 +10,6 @@ class PowerPlanner130View extends WatchUi.DataField
 	hidden var _powerBias as Float;
 	hidden var _speedBias as Float;
 	hidden var _distanceIndex as Number;
-    hidden var _segmentStartDistance as Float;
-    hidden var _segmentStartTime as Number;
     hidden var _segmentAvgPower as Float;
     hidden var _segmentAvgSpeed as Float;
     hidden var _segmentDistanceRemaining as Float;
@@ -38,8 +36,6 @@ class PowerPlanner130View extends WatchUi.DataField
         _speedBias = Application.getApp().getProperty("speedBias");
         _distanceIndex = 0;
         _segmentSamples = 0;
-        _segmentStartTime = 0;
-        _segmentStartDistance = 0.0f;
         _segmentAvgSpeed = 0.0f;
         _segmentAvgPower = 0.0f;
         _segmentDistanceRemaining = _segmentData[0];
@@ -106,7 +102,6 @@ class PowerPlanner130View extends WatchUi.DataField
     	if(!(info has :currentPower)) { return; }
         if(!(info has :currentSpeed)) { return; }
         if(!(info has :elapsedDistance)) { return; }
-        if(!(info has :elapsedTime)) { return; }
         
     	// get current power and speed
         var currentPower as Float = info.currentPower != null ? info.currentPower * 1.0f : 0.0f;
@@ -123,10 +118,8 @@ class PowerPlanner130View extends WatchUi.DataField
 	        _segmentSamples = 1;
             _segmentAvgPower = currentPower;
             _segmentAvgSpeed = currentSpeed;
-            _segmentStartTime = info.elapsedTime;
         	while(newRemaining < 0 && _distanceIndex < _nData - 3)
         	{
-                _segmentStartDistance = _segmentData[_distanceIndex];
         		_distanceIndex += 3;
         		newRemaining = _segmentData[_distanceIndex] - elapsedKm;
         	}
@@ -134,7 +127,7 @@ class PowerPlanner130View extends WatchUi.DataField
         else
         {
 	        _segmentAvgPower = (_segmentSamples * _segmentAvgPower + currentPower) / (_segmentSamples + 1);
-            _segmentAvgSpeed = 3600000.0f * (elapsedKm - _segmentStartDistance) / (info.elapsedTime - _segmentStartTime);
+            _segmentAvgSpeed = (_segmentSamples * _segmentAvgSpeed + currentSpeed) / (_segmentSamples + 1);
 	        _segmentSamples += 1;
         }
 
@@ -149,14 +142,14 @@ class PowerPlanner130View extends WatchUi.DataField
           
         // set power indicator
         var tgtPower as Float = _segmentData[_distanceIndex + 1] + _powerBias;
-        var powerLoc as Float = (_segmentAvgPower - tgtPower) / 80.0f + 0.5f;
+        var powerLoc as Float = (_segmentAvgPower - tgtPower) / 100.0f + 0.5f;
         if(powerLoc < 0.0f) { powerLoc = 0.0f; }
         else if(powerLoc > 1.0f) { powerLoc = 1.0f; } 
         View.findDrawableById("powerIndicator").locX = 17 + powerLoc * (_width - 34);
         
         // set speed indicator
         var tgtSpeed as Float = _segmentData[_distanceIndex + 2] + _speedBias;
-        var speedLoc as Float = (_segmentAvgSpeed - tgtSpeed) / 15.0f + 0.5f;
+        var speedLoc as Float = (_segmentAvgSpeed - tgtSpeed) / 20.0f + 0.5f;
         if(speedLoc < 0.0f) { speedLoc = 0.0f; }
         else if(speedLoc > 1.0f) { speedLoc = 1.0f; } 
         View.findDrawableById("speedIndicator").locX = 17 + speedLoc * (_width - 34);
