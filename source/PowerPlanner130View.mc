@@ -10,11 +10,14 @@ class PowerPlanner130View extends WatchUi.DataField
 	hidden var _powerBias as Float;
 	hidden var _speedBias as Float;
 	hidden var _distanceIndex as Number;
-    hidden var _segmentPowerSum as Float;
-    hidden var _segmentSpeedSum as Float;
+    hidden var _segmentStartDistance as Float;
+    hidden var _segmentStartTime as Number;
+    hidden var _segmentAvgPower as Float;
+    hidden var _segmentAvgSpeed as Float;
     hidden var _segmentDistanceRemaining as Float;
     hidden var _segmentSamples as Number;
     hidden var _segmentData as Array;
+    hidden var _nData as Number;
 
     function initialize()
     {
@@ -23,24 +26,26 @@ class PowerPlanner130View extends WatchUi.DataField
 		
 		// parse power plan
 		_segmentData = new[1500];
-		var segInd = 0;
-		segInd = parsePlan(Application.getApp().getProperty("planPart01"), segInd);
-		segInd = parsePlan(Application.getApp().getProperty("planPart02"), segInd);
-		segInd = parsePlan(Application.getApp().getProperty("planPart03"), segInd);
-		segInd = parsePlan(Application.getApp().getProperty("planPart04"), segInd);
-		segInd = parsePlan(Application.getApp().getProperty("planPart05"), segInd);
+		_nData = 0;
+		parsePlan(Application.getApp().getProperty("planPart01"));
+		parsePlan(Application.getApp().getProperty("planPart02"));
+		parsePlan(Application.getApp().getProperty("planPart03"));
+		parsePlan(Application.getApp().getProperty("planPart04"));
+		parsePlan(Application.getApp().getProperty("planPart05"));
         
         // initialize variables
         _powerBias = Application.getApp().getProperty("powerBias");
         _speedBias = Application.getApp().getProperty("speedBias");
         _distanceIndex = 0;
-        _segmentPowerSum = 0.0f;
-        _segmentSpeedSum = 0.0f;
         _segmentSamples = 0;
+        _segmentStartTime = 0;
+        _segmentStartDistance = 0.0f;
+        _segmentAvgSpeed = 0.0f;
+        _segmentAvgPower = 0.0f;
         _segmentDistanceRemaining = _segmentData[0];
     }
     
-    function parsePlan(planPart as String, segInd as number) as Number
+    function parsePlan(planPart as String) as Void
     {
     	var charArr = planPart.toCharArray();
     	var i as Number = 0;
@@ -54,11 +59,10 @@ class PowerPlanner130View extends WatchUi.DataField
 				if(charArr[j] == ',' || charArr[j] == ';') { break; }
 				j++;
 			}
-			_segmentData[segInd] = planPart.substring(i, j).toFloat();
+			_segmentData[_nData] = planPart.substring(i, j).toFloat();
 			i = j + 1;
-			segInd++;
+			_nData++;
 		}
-		return segInd;
     }
 
     // Set your layout here.
@@ -102,11 +106,11 @@ class PowerPlanner130View extends WatchUi.DataField
     	if(!(info has :currentPower)) { return; }
         if(!(info has :currentSpeed)) { return; }
         if(!(info has :elapsedDistance)) { return; }
+        if(!(info has :elapsedTime)) { return; }
         
     	// get current power and speed
-        var currentPower as Float = info.currentPower != null ? info.currentPower as Float : 0.0f;
-        var currentSpeed as Float = info.currentSpeed != null ? info.currentSpeed as Float : 0.0f;
-        currentSpeed *= 3.6f;
+        var currentPower as Float = info.currentPower != null ? info.currentPower * 1.0f : 0.0f;
+        var currentSpeed as Float = info.currentSpeed != null ? info.currentSpeed * 3.6f : 0.0f;
         
         // calculate remaining distance
         var elapsedKm = info.elapsedDistance != null ? info.elapsedDistance * 0.001f : 0.0f;
@@ -116,21 +120,24 @@ class PowerPlanner130View extends WatchUi.DataField
         // check segment, update values
         if(newRemaining < 0)
         {
-        	_segmentPowerSum = currentPower;
-        	_segmentSpeedSum = currentSpeed;
 	        _segmentSamples = 1;
-        	while(newRemaining < 0 && _distanceIndex < _segmentData.size() - 3)
+            _segmentAvgPower = currentPower;
+            _segmentAvgSpeed = currentSpeed;
+            _segmentStartTime = info.elapsedTime;
+        	while(newRemaining < 0 && _distanceIndex < _nData - 3)
         	{
+                _segmentStartDistance = _segmentData[_distanceIndex];
         		_distanceIndex += 3;
         		newRemaining = _segmentData[_distanceIndex] - elapsedKm;
         	}
         }
         else
         {
-	        _segmentPowerSum += currentPower;
-	        _segmentSpeedSum += currentSpeed;
+	        _segmentAvgPower = (_segmentSamples * _segmentAvgPower + currentPower) / (_segmentSamples + 1);
+            _segmentAvgSpeed = 3600000.0f * (elapsedKm - _segmentStartDistance) / (info.elapsedTime - _segmentStartTime);
 	        _segmentSamples += 1;
         }
+
         _segmentDistanceRemaining = newRemaining;
     }
 
@@ -139,21 +146,17 @@ class PowerPlanner130View extends WatchUi.DataField
     {
     	// set the background color
         (View.findDrawableById("Background") as Text).setColor(Graphics.COLOR_WHITE);
-        
-        // calculate averages
-        var avgPower =  _segmentSamples > 0 ? _segmentPowerSum / _segmentSamples : 0.0f;
-        var avgSpeed =  _segmentSamples > 0 ? _segmentSpeedSum / _segmentSamples : 0.0f;
           
         // set power indicator
-        var tgtPower = _segmentData[_distanceIndex + 1] + _powerBias;
-        var powerLoc = (avgPower - tgtPower) / 80 + 0.5f;
+        var tgtPower as Float = _segmentData[_distanceIndex + 1] + _powerBias;
+        var powerLoc as Float = (_segmentAvgPower - tgtPower) / 80.0f + 0.5f;
         if(powerLoc < 0.0f) { powerLoc = 0.0f; }
         else if(powerLoc > 1.0f) { powerLoc = 1.0f; } 
         View.findDrawableById("powerIndicator").locX = 17 + powerLoc * (_width - 34);
         
         // set speed indicator
-        var tgtSpeed = _segmentData[_distanceIndex + 2] + _speedBias;
-        var speedLoc = (avgSpeed - tgtSpeed) / 8 + 0.5f;
+        var tgtSpeed as Float = _segmentData[_distanceIndex + 2] + _speedBias;
+        var speedLoc as Float = (_segmentAvgSpeed - tgtSpeed) / 15.0f + 0.5f;
         if(speedLoc < 0.0f) { speedLoc = 0.0f; }
         else if(speedLoc > 1.0f) { speedLoc = 1.0f; } 
         View.findDrawableById("speedIndicator").locX = 17 + speedLoc * (_width - 34);
