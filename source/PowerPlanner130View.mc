@@ -12,6 +12,7 @@ class PowerPlanner130View extends WatchUi.DataField
 	hidden var _distanceIndex as Number;
     hidden var _segmentAvgPower as Float;
     hidden var _segmentAvgSpeed as Float;
+    hidden var _distance as Float;
     hidden var _segmentDistanceRemaining as Float;
     hidden var _segmentSamples as Number;
     hidden var _segmentData as Array;
@@ -67,11 +68,15 @@ class PowerPlanner130View extends WatchUi.DataField
         View.setLayout(Rez.Layouts.MainLayout(dc));
         _width = dc.getWidth() * 0.75f;
         
+        // set up values
         var segRemView = View.findDrawableById("segmentRemaining");
+        segRemView.locY = segRemView.locY - 15;
+        var distView = View.findDrawableById("distance");
+        distView.locY = distView.locY + 15;
         
         // set up power display
         var pwrIndView = View.findDrawableById("powerIndicator");
-        pwrIndView.locY = segRemView.locY - 15;
+        pwrIndView.locY = segRemView.locY;
         pwrIndView.setText("|");
         var pwrMidView = View.findDrawableById("powerMidpoint");
         pwrMidView.locY = pwrIndView.locY + 1;
@@ -83,7 +88,7 @@ class PowerPlanner130View extends WatchUi.DataField
         
         // set up speed display
         var spdIndView = View.findDrawableById("speedIndicator");
-        spdIndView.locY = segRemView.locY + 15;
+        spdIndView.locY = distView.locY;
         spdIndView.setText("|");
         var spdMidView = View.findDrawableById("speedMidpoint");
         spdMidView.locY = spdIndView.locY + 1;
@@ -108,8 +113,8 @@ class PowerPlanner130View extends WatchUi.DataField
         var currentSpeed as Float = info.currentSpeed != null ? info.currentSpeed * 3.6f : 0.0f;
         
         // calculate remaining distance
-        var elapsedKm = info.elapsedDistance != null ? info.elapsedDistance * 0.001f : 0.0f;
-        var newRemaining as Float = _segmentData[_distanceIndex] - elapsedKm;
+        _distance = info.elapsedDistance != null ? info.elapsedDistance * 0.001f : 0.0f;
+        var newRemaining as Float = _segmentData[_distanceIndex] - _distance;
         if(newRemaining == _segmentDistanceRemaining) { return; }
         
         // check segment, update values
@@ -121,7 +126,7 @@ class PowerPlanner130View extends WatchUi.DataField
         	while(newRemaining < 0 && _distanceIndex < _nData - 3)
         	{
         		_distanceIndex += 3;
-        		newRemaining = _segmentData[_distanceIndex] - elapsedKm;
+        		newRemaining = _segmentData[_distanceIndex] - _distance;
         	}
         }
         else
@@ -157,6 +162,8 @@ class PowerPlanner130View extends WatchUi.DataField
         // set values
         var segRemView = View.findDrawableById("segmentRemaining") as Text;
         segRemView.setText(_segmentDistanceRemaining.format("%.2f"));
+        var distView = View.findDrawableById("distance") as Text;
+        distView.setText(_distance.format("%.2f"));
 
         // call parent's onUpdate(dc) to redraw the layout
         View.onUpdate(dc);
