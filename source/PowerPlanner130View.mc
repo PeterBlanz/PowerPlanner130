@@ -67,11 +67,11 @@ class PowerPlanner130View extends WatchUi.DataField
         View.setLayout(Rez.Layouts.MainLayout(dc));
         _width = dc.getWidth() * 0.75f;
         
-        var valueView = View.findDrawableById("value");
+        var segRemView = View.findDrawableById("segmentRemaining");
         
         // set up power display
         var pwrIndView = View.findDrawableById("powerIndicator");
-        pwrIndView.locY = valueView.locY - 15;
+        pwrIndView.locY = segRemView.locY - 15;
         pwrIndView.setText("|");
         var pwrMidView = View.findDrawableById("powerMidpoint");
         pwrMidView.locY = pwrIndView.locY + 1;
@@ -83,7 +83,7 @@ class PowerPlanner130View extends WatchUi.DataField
         
         // set up speed display
         var spdIndView = View.findDrawableById("speedIndicator");
-        spdIndView.locY = valueView.locY + 15;
+        spdIndView.locY = segRemView.locY + 15;
         spdIndView.setText("|");
         var spdMidView = View.findDrawableById("speedMidpoint");
         spdMidView.locY = spdIndView.locY + 1;
@@ -154,9 +154,9 @@ class PowerPlanner130View extends WatchUi.DataField
         else if(speedLoc > 1.0f) { speedLoc = 1.0f; } 
         View.findDrawableById("speedIndicator").locX = 17 + speedLoc * (_width - 34);
         
-        // set value
-        var value = View.findDrawableById("value") as Text;
-        value.setText(_segmentDistanceRemaining.format("%.2f"));
+        // set values
+        var segRemView = View.findDrawableById("segmentRemaining") as Text;
+        segRemView.setText(_segmentDistanceRemaining.format("%.2f"));
 
         // call parent's onUpdate(dc) to redraw the layout
         View.onUpdate(dc);
